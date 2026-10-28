@@ -1,20 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { isAuthenticated } from "@/lib/api";
+import { isAuthenticated, subscribeAuth } from "@/lib/api";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
+  const ready = useSyncExternalStore(subscribeAuth, isAuthenticated, () => false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
       router.replace("/login");
       return;
     }
-    setReady(true);
-  }, [router]);
+  }, [router, ready]);
 
   if (!ready) {
     return (

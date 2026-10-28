@@ -8,3 +8,5 @@ data/cases/*
 data/chroma_db/*
 data/*.db
 !data/**/.gitkeep
+# Downloaded public statute PDFs and model weights are seeded into the persistent volume.
+data/sample_corpus/*

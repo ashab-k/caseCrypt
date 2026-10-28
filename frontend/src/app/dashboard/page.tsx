@@ -28,20 +28,13 @@ function DashboardInner() {
   const [caseType, setCaseType] = useState<CaseType>("other");
   const [saving, setSaving] = useState(false);
 
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
-      setCases(await api.listCases());
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load cases");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    load();
+    let active = true;
+    api.listCases()
+      .then((value) => { if (active) setCases(value); })
+      .catch((err) => { if (active) setError(err instanceof ApiError ? err.message : "Failed to load cases"); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
 
   async function onCreate(e: FormEvent) {

@@ -1,6 +1,6 @@
 # CaseCrypt — Global Project Context
 
-> **Last updated**: Phase 1 (Foundation & Auth) — In Progress
+> **Last updated**: 29 October 2026 — Phases 1–2 complete; Phase 3 implemented (live OpenAI synthesis verification pending).
 > Read this file before touching any part of the codebase.
 
 ---
@@ -58,7 +58,7 @@ caseCrypt/
 | LLM | OpenAI GPT-4o | Best reasoning for legal tasks |
 | Embeddings | sentence-transformers `all-MiniLM-L6-v2` | Free, local, CPU-compatible |
 | Vector store | ChromaDB | Native metadata filtering by case_id |
-| RAG framework | LangChain LCEL | Modern chain composition |
+| RAG framework | LangChain LCEL | Hybrid BM25 + MiniLM/Chroma retrieval; cited GPT-4o or exact excerpts |
 | PDF extraction | PyMuPDF + pymupdf4llm | Fast, Markdown output for RAG |
 | OCR | Tesseract + pytesseract | For scanned PDFs and images |
 | DOCX | python-docx | Word document support |
@@ -70,7 +70,7 @@ caseCrypt/
 ### Frontend
 | Layer | Technology | Why |
 |---|---|---|
-| Framework | Next.js 14 (App Router) | SSR, routing, server components |
+| Framework | Next.js 16.4 (App Router) | SSR, routing, server components |
 | UI Library | shadcn/ui + Radix UI | Minimal, professional, accessible |
 | Styling | Tailwind CSS | Utility-first, consistent |
 | Language | TypeScript | Type safety across components |
@@ -82,7 +82,7 @@ caseCrypt/
 | Decision | Choice | Rationale |
 |---|---|---|
 | Indian legal corpus | IPC, CrPC, Constitution, Evidence Act, IT Act | Covers criminal + civil + digital law |
-| Corpus source | IndiaCode.gov.in | Official government source, free, structured |
+| Corpus source | India Code + official government PDF mirrors | Verified static snapshots; see Phase 3 source manifest |
 | Seeding strategy | Once via `seed.py`, cached permanently in ChromaDB | Avoid re-embedding on every restart |
 | RAG search scope | Corpus-only (seeded statutes) | Uploaded docs used only for extraction/contradiction |
 | Upload formats | PDF, scanned PDF, DOCX, JPG, PNG | All common legal document types |
@@ -100,9 +100,9 @@ caseCrypt/
 
 | Phase | Name | Status |
 |---|---|---|
-| **1** | Foundation & Auth | 🔨 In Progress |
-| **2** | Document Intelligence (OCR + NLP + Timeline) | ⏳ Pending |
-| **3** | Legal RAG Research Engine | ⏳ Pending |
+| **1** | Foundation & Auth | ✅ Complete |
+| **2** | Document Intelligence (OCR + NLP + Timeline) | ✅ Complete |
+| **3** | Legal RAG Research Engine | ✅ Implemented; offline corpus verified |
 | **4** | Contradiction Detection | ⏳ Pending |
 | **5** | Blockchain Evidence Integrity | ⏳ Pending |
 
@@ -141,7 +141,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ---
 
-## How to Run (Phase 1)
+## How to Run
 
 ### Docker (recommended)
 
@@ -170,6 +170,11 @@ npm run dev
 ```
 
 ---
+
+
+## Phase 3 research setup
+
+Run `docker compose exec backend python seed.py` once after rebuilding, or `venv/bin/python seed.py` inside `backend` for local development. Open `/research` after logging in. The public statute corpus never includes uploaded case files. Without an OpenAI key, research returns labelled verbatim statute excerpts. IPC, CrPC, and Evidence Act sources are historical; the replacement criminal laws are not in the corpus. See `docs/phases/phase_3.md` for exact source URLs, limits, and verification.
 
 ## Contact
 

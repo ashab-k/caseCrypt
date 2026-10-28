@@ -20,11 +20,6 @@ import type {
 
 const LATER_MODULES = [
   {
-    title: "Legal research",
-    blurb: "Cited answers from Indian statutes (IPC, CrPC, and more).",
-    phase: "Phase 3",
-  },
-  {
     title: "Contradiction detection",
     blurb: "Cross-document inconsistency flags for lawyer review.",
     phase: "Phase 4",
@@ -137,6 +132,9 @@ function CaseDetailInner() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Link href="/research" className="rounded-md border border-line bg-white px-4 py-2 text-sm font-semibold text-ink hover:border-accent">
+                  Legal research
+                </Link>
                 <Link
                   href={`/cases/${caseId}/upload`}
                   className="rounded-md border border-line bg-white px-4 py-2 text-sm font-semibold text-ink hover:border-accent"
@@ -220,7 +218,7 @@ function CaseDetailInner() {
 
             <section className="mt-10">
               <h2 className="text-lg font-semibold text-ink">Upcoming modules</h2>
-              <ul className="mt-6 grid gap-4 sm:grid-cols-3">
+              <ul className="mt-6 grid gap-4 sm:grid-cols-2">
                 {LATER_MODULES.map((m) => (
                   <li
                     key={m.title}

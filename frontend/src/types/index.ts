@@ -145,3 +145,35 @@ export interface KnowledgeGraph {
   nodes: GraphNode[];
   links: GraphLink[];
 }
+
+export type ResearchAct = 'IPC' | 'CrPC' | 'Constitution' | 'Evidence Act' | 'IT Act';
+export interface ResearchSource {
+  id: string;
+  act: string;
+  section: string;
+  title: string;
+  text: string;
+  url: string;
+  page: number;
+  score: number;
+  historical: boolean;
+}
+export interface ResearchAnswer {
+  answer: string;
+  sources: ResearchSource[];
+  confidence: 'high' | 'medium' | 'low';
+  retrieved_chunks: number;
+  generation_mode: 'openai' | 'extractive' | 'unavailable';
+  retrieval_mode: string;
+  notice: string;
+}
+export interface CorpusStatus {
+  seeded: boolean;
+  complete: boolean;
+  total_chunks: number;
+  acts: {act: ResearchAct; chunks: number; sections: number; historical: boolean; source_url: string}[];
+  seeded_at: string | null;
+  embedding_model: string;
+  generation_available: boolean;
+  notice: string;
+}

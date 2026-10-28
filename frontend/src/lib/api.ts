@@ -1,5 +1,8 @@
 import type {
   Case,
+  CorpusStatus,
+  ResearchAct,
+  ResearchAnswer,
   CaseCreatePayload,
   CaseDocument,
   CaseEntities,
@@ -30,11 +33,13 @@ function getToken(): string | null {
 export function setAuth(token: string, user: User) {
   localStorage.setItem("cc_token", token);
   localStorage.setItem("cc_user", JSON.stringify(user));
+  window.dispatchEvent(new Event("cc-auth"));
 }
 
 export function clearAuth() {
   localStorage.removeItem("cc_token");
   localStorage.removeItem("cc_user");
+  window.dispatchEvent(new Event("cc-auth"));
 }
 
 export function getStoredUser(): User | null {
@@ -46,6 +51,20 @@ export function getStoredUser(): User | null {
   } catch {
     return null;
   }
+}
+
+export function subscribeAuth(listener: () => void) {
+  window.addEventListener("storage", listener);
+  window.addEventListener("cc-auth", listener);
+  return () => {
+    window.removeEventListener("storage", listener);
+    window.removeEventListener("cc-auth", listener);
+  };
+}
+
+export function getAuthSnapshot(): string | null {
+  if (!isAuthenticated()) return null;
+  return localStorage.getItem("cc_user") || "";
 }
 
 export function isAuthenticated(): boolean {
@@ -85,6 +104,12 @@ async function request<T>(
 }
 
 export const api = {
+  corpusStatus: () => request<CorpusStatus>("/api/corpus/status"),
+  research: (question: string, act?: ResearchAct) =>
+    request<ResearchAnswer>("/api/query", {
+      method: "POST", body: JSON.stringify({question, act: act || null, top_k: 5}),
+    }),
+
   register: (name: string, email: string, password: string) =>
     request<TokenResponse>(
       "/api/auth/register",
