@@ -1,10 +1,12 @@
+import json
 from pathlib import Path
-from typing import Any
 
-from pydantic import field_validator, model_validator
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).parent
+
+_DEFAULT_CORS = "http://localhost:3000,http://127.0.0.1:3000"
 
 
 class Settings(BaseSettings):
@@ -36,20 +38,19 @@ class Settings(BaseSettings):
     embedding_model: str = "all-MiniLM-L6-v2"
     llm_model: str = "gpt-4o"
 
-    # CORS — JSON list or comma-separated string in env
-    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    # CORS as a plain string so pydantic-settings does not JSON-decode the env var.
+    # Accepts comma-separated origins or a JSON array string.
+    cors_origins: str = _DEFAULT_CORS
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors(cls, v: Any) -> Any:
-        if isinstance(v, str):
-            raw = v.strip()
-            if raw.startswith("["):
-                import json
-
-                return json.loads(raw)
-            return [part.strip() for part in raw.split(",") if part.strip()]
-        return v
+    @property
+    def cors_origin_list(self) -> list[str]:
+        raw = self.cors_origins.strip()
+        if not raw:
+            return []
+        if raw.startswith("["):
+            parsed = json.loads(raw)
+            return [str(item).strip() for item in parsed if str(item).strip()]
+        return [part.strip() for part in raw.split(",") if part.strip()]
 
     @model_validator(mode="after")
     def resolve_paths(self) -> "Settings":
