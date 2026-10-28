@@ -1,12 +1,13 @@
 """
 CaseCrypt Backend — FastAPI entrypoint
 """
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from config import settings
-from database import connect_db, close_db
+from database import close_db, connect_db
 from routers import auth, cases, upload
 
 

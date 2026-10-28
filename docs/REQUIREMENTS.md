@@ -50,7 +50,7 @@ The system is organised around **6 core objectives**:
 
 ### FR-2: Document Upload
 - Supported formats: PDF (native + scanned), DOCX, JPG, PNG
-- Files stored per case; metadata recorded in MongoDB
+- Files stored per case; metadata recorded in SQLite
 - Every uploaded file is SHA-256 hashed and recorded on the blockchain ledger at upload time
 
 ### FR-3: OCR & NLP Extraction
@@ -105,7 +105,7 @@ The system is organised around **6 core objectives**:
 | **Reliability** | Blockchain ledger is append-only — no UPDATE/DELETE ever issued |
 | **Explainability** | Every AI output (RAG answer, contradiction flag) cites its source |
 | **Human Oversight** | All AI outputs are for lawyer review — system is decision support, not autonomous advisor |
-| **Scalability** | Phase I: single-server deployment; Phase II+: can containerise with Docker |
+| **Scalability** | Phase I: Docker Compose single-host deploy with persistent SQLite volume |
 | **Auditability** | Full chain-of-custody log for every evidence file |
 
 ---

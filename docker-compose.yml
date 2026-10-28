@@ -1,0 +1,38 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: casecrypt-backend
+    ports:
+      - "8000:8000"
+    environment:
+      SQLITE_PATH: /app/data/casecrypt.db
+      JWT_SECRET: ${JWT_SECRET:-changeme-super-secret-key-casecrypt-docker}
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_HOURS: "24"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Allow browser calls from the published frontend
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    volumes:
+      # Persist SQLite DB + uploaded files across container restarts
+      - casecrypt_data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Browser talks to host-mapped backend port
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    container_name: casecrypt-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  casecrypt_data:
+    name: casecrypt_data

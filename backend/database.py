@@ -1,39 +1,47 @@
 """
-MongoDB connection manager using motor (async driver)
+SQLite connection manager (async SQLAlchemy + aiosqlite)
+Persists to a file on disk so data survives restarts and Docker volumes.
 """
-from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import IndexModel, ASCENDING
+from collections.abc import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from config import settings
+from models.orm import Base
 
-_client: AsyncIOMotorClient | None = None
+# Ensure parent directory exists before engine creation
+settings.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
 
+engine = create_async_engine(
+    f"sqlite+aiosqlite:///{settings.sqlite_path}",
+    echo=False,
+    connect_args={"check_same_thread": False},
+)
 
-def get_db():
-    """Return the database instance. Call after connect_db()."""
-    return _client[settings.mongo_db]
-
-
-async def connect_db():
-    global _client
-    _client = AsyncIOMotorClient(settings.mongo_uri)
-    db = get_db()
-
-    # Create indexes
-    await db.users.create_indexes([
-        IndexModel([("email", ASCENDING)], unique=True),
-    ])
-    await db.cases.create_indexes([
-        IndexModel([("owner_id", ASCENDING)]),
-        IndexModel([("created_at", ASCENDING)]),
-    ])
-    await db.documents.create_indexes([
-        IndexModel([("case_id", ASCENDING)]),
-    ])
-    print("✅ Connected to MongoDB")
+AsyncSessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+)
 
 
-async def close_db():
-    global _client
-    if _client:
-        _client.close()
-        print("🔌 Disconnected from MongoDB")
+async def connect_db() -> None:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    print(f"✅ Connected to SQLite at {settings.sqlite_path}")
+
+
+async def close_db() -> None:
+    await engine.dispose()
+    print("🔌 Disconnected from SQLite")
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise

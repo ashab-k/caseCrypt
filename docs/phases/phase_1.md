@@ -11,9 +11,9 @@
 
 | Area | What |
 |---|---|
-| **Backend** | FastAPI app, MongoDB connection, JWT auth (register/login/me), case CRUD, file upload endpoint |
-| **Frontend** | Next.js 14 + shadcn/ui setup, landing page, login/register pages, dashboard (empty module cards), case creation dialog, file upload drag-and-drop |
-| **Infra** | `.env` config, CORS middleware, MongoDB indexes, folder structure |
+| **Backend** | FastAPI app, persistent SQLite (SQLAlchemy), JWT auth (register/login/me), case CRUD, file upload endpoint |
+| **Frontend** | Next.js App Router, landing page, login/register pages, dashboard, case creation, file upload drag-and-drop |
+| **Infra** | `.env` config, CORS middleware, Docker Compose (backend + frontend), named volume for SQLite + uploads |
 
 ---
 
@@ -23,7 +23,8 @@
 |---|---|
 | `main.py` | FastAPI app, CORS, lifespan (DB connect/close), router registration |
 | `config.py` | Settings via pydantic-settings, reads from `.env` |
-| `database.py` | Motor async MongoDB client, connect/close, index creation |
+| `database.py` | Async SQLAlchemy engine + session factory, SQLite file create/connect |
+| `models/orm.py` | SQLAlchemy ORM tables: users, cases, documents |
 | `middleware/auth.py` | JWT token creation, `get_current_user` dependency |
 | `models/user.py` | UserCreate, UserLogin, UserOut, TokenResponse |
 | `models/case.py` | CaseCreate, CaseUpdate, CaseOut, DocumentOut |
@@ -60,49 +61,40 @@
 
 ---
 
-## MongoDB Collections
+## SQLite Tables (`data/casecrypt.db`)
 
 ### `users`
-```json
-{
-  "_id": ObjectId,
-  "name": "string",
-  "email": "string (unique)",
-  "password_hash": "string (bcrypt)",
-  "created_at": "datetime",
-  "updated_at": "datetime"
-}
-```
+| Column | Type |
+|---|---|
+| id | TEXT PK (UUID) |
+| name | TEXT |
+| email | TEXT UNIQUE |
+| password_hash | TEXT (bcrypt) |
+| created_at / updated_at | DATETIME |
 
 ### `cases`
-```json
-{
-  "_id": ObjectId,
-  "title": "string",
-  "description": "string",
-  "case_type": "criminal | civil | contract | other",
-  "owner_id": "string (user _id)",
-  "document_count": 0,
-  "created_at": "datetime",
-  "updated_at": "datetime"
-}
-```
+| Column | Type |
+|---|---|
+| id | TEXT PK (UUID) |
+| title / description | TEXT |
+| case_type | TEXT (`criminal \| civil \| contract \| other`) |
+| owner_id | TEXT FK → users.id |
+| document_count | INTEGER |
+| created_at / updated_at | DATETIME |
 
 ### `documents`
-```json
-{
-  "_id": ObjectId,
-  "case_id": "string",
-  "owner_id": "string",
-  "filename": "uuid_originalname.pdf",
-  "original_name": "FIR_Case123.pdf",
-  "file_type": "pdf | docx | jpg | png",
-  "file_size": 204800,
-  "sha256": "abc123...",
-  "uploaded_at": "datetime",
-  "extracted": false
-}
-```
+| Column | Type |
+|---|---|
+| id | TEXT PK (UUID) |
+| case_id / owner_id | TEXT FK |
+| filename / original_name | TEXT |
+| file_type | TEXT |
+| file_size | INTEGER |
+| sha256 | TEXT |
+| uploaded_at | DATETIME |
+| extracted | BOOLEAN |
+
+> Blockchain ledger remains a **separate** append-only file: `data/ledger.db` (Phase 5).
 
 ---
 
@@ -121,17 +113,19 @@
 
 ## Deliverable / Definition of Done
 
-- [ ] User can register and receive a JWT
-- [ ] User can login and receive a JWT
-- [ ] Protected routes return 401 without valid JWT
-- [ ] User can create a case (criminal/civil/contract/other)
-- [ ] User can list only their own cases
-- [ ] User can upload PDF, DOCX, JPG, PNG to a case
-- [ ] Uploaded files appear in the documents list for that case
-- [ ] Frontend login/register forms work and store JWT in localStorage
-- [ ] Dashboard shows all user cases as cards
-- [ ] `npm run build` passes with 0 errors
-- [ ] `uvicorn main:app` starts without errors
+- [x] User can register and receive a JWT
+- [x] User can login and receive a JWT
+- [x] Protected routes return 401 without valid JWT
+- [x] User can create a case (criminal/civil/contract/other)
+- [x] User can list only their own cases
+- [x] User can upload PDF, DOCX, JPG, PNG to a case
+- [x] Uploaded files appear in the documents list for that case
+- [x] Frontend login/register forms work and store JWT in localStorage
+- [x] Dashboard shows all user cases as cards
+- [x] `npm run build` passes with 0 errors
+- [x] `uvicorn main:app` starts without errors
+- [x] Dockerfiles + `docker compose` defined (backend + frontend + persistent volume)
+- [x] SQLite DB path + uploads designed for named volume persistence (`casecrypt_data`)
 
 ---
 

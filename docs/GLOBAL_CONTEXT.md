@@ -19,44 +19,29 @@ It is a **decision-support tool**, not an autonomous legal advisor. Every AI out
 
 ```
 caseCrypt/
-├── docs/                        ← YOU ARE HERE — all context lives here
-│   ├── REQUIREMENTS.md          ← Full functional + non-functional requirements
+├── docker-compose.yml           ← Backend + frontend; volume for SQLite + uploads
+├── README.md
+├── docs/
+│   ├── REQUIREMENTS.md
 │   ├── GLOBAL_CONTEXT.md        ← This file
-│   ├── phases/
-│   │   ├── phase_1.md           ← Auth, Cases, Upload
-│   │   ├── phase_2.md           ← OCR, NLP, Timeline
-│   │   ├── phase_3.md           ← Legal RAG + Indian Corpus
-│   │   ├── phase_4.md           ← Contradiction Detection
-│   │   └── phase_5.md           ← Blockchain Evidence Integrity
-│   └── components/
-│       ├── auth.md              ← Auth service context
-│       ├── cases.md             ← Case management context
-│       ├── upload.md            ← File upload context
-│       ├── ocr_nlp.md           ← OCR + NLP extraction context
-│       ├── timeline.md          ← Timeline builder context
-│       ├── rag.md               ← Legal RAG research engine context
-│       ├── similarity.md        ← Case similarity context
-│       ├── contradiction.md     ← Contradiction detection context
-│       ├── blockchain.md        ← Blockchain ledger context
-│       └── frontend.md          ← Frontend + UI context
+│   └── phases/                  ← phase_1 … phase_5
 │
-├── backend/                     ← Python FastAPI
+├── backend/                     ← Python FastAPI + SQLite
+│   ├── Dockerfile
 │   ├── main.py
 │   ├── config.py
 │   ├── database.py
-│   ├── requirements.txt
+│   ├── models/                  ← Pydantic schemas + ORM
 │   ├── routers/
-│   ├── services/
-│   ├── models/
 │   ├── middleware/
-│   └── data/
+│   └── data/                    ← casecrypt.db, uploads/ (persisted)
 │
-└── frontend/                    ← Next.js 14 + shadcn/ui
+└── frontend/                    ← Next.js App Router
+    ├── Dockerfile
     └── src/
         ├── app/
         ├── components/
         ├── lib/
-        ├── hooks/
         └── types/
 ```
 
@@ -68,7 +53,7 @@ caseCrypt/
 | Layer | Technology | Why |
 |---|---|---|
 | Framework | FastAPI (Python) | Async, auto OpenAPI docs, fast |
-| Database | MongoDB (motor async) | Flexible documents for case/entity data |
+| Database | SQLite (SQLAlchemy async + aiosqlite) | Zero-infra, file-persisted; Docker volume mounts for durability |
 | Auth | JWT (python-jose) + bcrypt (passlib) | Stateless, secure |
 | LLM | OpenAI GPT-4o | Best reasoning for legal tasks |
 | Embeddings | sentence-transformers `all-MiniLM-L6-v2` | Free, local, CPU-compatible |
@@ -105,8 +90,9 @@ caseCrypt/
 | Contradiction scope | Cross-document within a case | More valuable than within-doc only |
 | Dashboard | Card-based per-case overview | See all module outputs at a glance |
 | Evidence integrity UI | Full SHA-256 hash + audit log table | Transparency for legal admissibility |
-| Main DB | MongoDB | Flexible schema for varied entity types |
+| Main DB | SQLite (`data/casecrypt.db`) | Persistent file DB; simple Docker volume; separate from ledger.db |
 | Blockchain | SQLite append-only + SHA-256 | Phase I: no infra overhead; Phase II: Hyperledger |
+| Deployment | Docker Compose | Backend + frontend; named volume for DB + uploads |
 
 ---
 
@@ -133,8 +119,7 @@ caseCrypt/
 ### Backend `.env`
 ```
 OPENAI_API_KEY=sk-...
-MONGO_URI=mongodb://localhost:27017
-MONGO_DB=casecrypt
+SQLITE_PATH=data/casecrypt.db
 JWT_SECRET=your-secret-here
 ```
 
@@ -158,12 +143,22 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ## How to Run (Phase 1)
 
+### Docker (recommended)
+
+```bash
+docker compose up --build
+# Frontend → http://localhost:3000
+# API docs → http://localhost:8000/docs
+# Data persists in Docker volume: casecrypt_data
+```
+
+### Local (without Docker)
+
 ```bash
 # Backend
 cd backend
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-python -m spacy download en_core_web_sm
 cp .env.example .env   # fill in your keys
 uvicorn main:app --reload --port 8000
 
