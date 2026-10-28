@@ -64,6 +64,8 @@ async def _load_extraction_pairs(
 
 def _run_pipeline(file_path: Path, file_type: str) -> dict:
     pages = extract_text(file_path, file_type)
+    if not any(page.text.strip() for page in pages):
+        raise ValueError("No readable text found. Check scan quality and that Tesseract OCR is installed.")
     raw_text = pages_to_raw_text(pages)
     ocr_used = any(p.is_ocr for p in pages)
     spacy_entities = run_spacy(raw_text)

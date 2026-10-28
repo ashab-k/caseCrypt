@@ -125,6 +125,7 @@ export interface CaseEntities {
   cited_provisions: CitedProvision[];
   spacy_entities: SpacyEntity[];
   document_count_extracted: number;
+  extraction_methods?: string[];
 }
 
 export interface GraphNode {

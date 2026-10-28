@@ -84,6 +84,7 @@ class CaseEntitiesOut(BaseModel):
     cited_provisions: list[CitedProvision]
     spacy_entities: list[SpacyEntity] = Field(default_factory=list)
     document_count_extracted: int = 0
+    extraction_methods: list[str] = Field(default_factory=list)
 
 
 class GraphNode(BaseModel):

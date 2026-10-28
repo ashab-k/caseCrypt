@@ -22,6 +22,7 @@ export default function UploadPage() {
 function UploadInner() {
   const params = useParams<{ id: string }>();
   const caseId = params.id;
+  const uploadInProgress = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [docs, setDocs] = useState<CaseDocument[]>([]);
@@ -29,25 +30,31 @@ function UploadInner() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function refresh() {
-    if (!caseId) return;
-    const [c, d] = await Promise.all([
-      api.getCase(caseId),
-      api.listDocuments(caseId),
-    ]);
-    setCaseData(c);
-    setDocs(d);
-  }
-
   useEffect(() => {
-    refresh().catch((err) =>
-      setError(err instanceof ApiError ? err.message : "Failed to load"),
-    );
+    let active = true;
+    Promise.all([api.getCase(caseId), api.listDocuments(caseId)])
+      .then(([c, d]) => {
+        if (!active) return;
+        setCaseData(c);
+        setDocs(d);
+      })
+      .catch((err) => {
+        if (active) setError(err instanceof ApiError ? err.message : "Failed to load");
+      });
+    return () => {
+      active = false;
+    };
   }, [caseId]);
 
   async function handleFiles(files: FileList | File[]) {
     const list = Array.from(files);
-    if (!list.length || !caseId) return;
+    if (!list.length || !caseId || uploadInProgress.current) return;
+    if (list.some((file) => !/\.(pdf|docx|jpe?g|png)$/i.test(file.name))) {
+      setError("Choose PDF, DOCX, JPG, or PNG files.");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+    uploadInProgress.current = true;
     setUploading(true);
     setError(null);
     try {
@@ -61,7 +68,9 @@ function UploadInner() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Upload failed");
     } finally {
+      uploadInProgress.current = false;
       setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
   }
 
@@ -111,12 +120,24 @@ function UploadInner() {
         <div
           onDragOver={(e) => {
             e.preventDefault();
-            setDragging(true);
+            if (!uploading) setDragging(true);
           }}
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
-          onClick={() => inputRef.current?.click()}
-          className={`mt-8 cursor-pointer border-2 border-dashed px-6 py-16 text-center transition ${
+          role="button"
+          tabIndex={uploading ? -1 : 0}
+          aria-label="Choose documents to upload"
+          aria-disabled={uploading}
+          aria-busy={uploading}
+          onClick={() => { if (!uploading) inputRef.current?.click(); }}
+          onKeyDown={(e) => {
+            if (e.target !== e.currentTarget) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              if (!uploading) inputRef.current?.click();
+            }
+          }}
+          className={`mt-8 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 border-2 border-dashed px-6 py-16 text-center transition ${
             dragging
               ? "border-accent bg-accent-soft/40"
               : "border-line bg-white hover:border-accent/50"
@@ -126,6 +147,7 @@ function UploadInner() {
             ref={inputRef}
             type="file"
             multiple
+            disabled={uploading}
             accept={ACCEPT}
             className="hidden"
             onChange={(e) => e.target.files && handleFiles(e.target.files)}
@@ -161,8 +183,8 @@ function UploadInner() {
                   key={d.id}
                   className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
                 >
-                  <div>
-                    <p className="font-medium text-ink">{d.original_name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-ink [overflow-wrap:anywhere]">{d.original_name}</p>
                     <p className="text-xs text-muted">
                       {d.file_type.toUpperCase()} · {formatBytes(d.file_size)} ·{" "}
                       {formatDate(d.uploaded_at)}

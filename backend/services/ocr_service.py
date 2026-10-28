@@ -82,19 +82,35 @@ def _ocr_pixmap(page) -> str:
         import pytesseract
         from PIL import Image
 
-        pix = page.get_pixmap(dpi=200)
+        import fitz
+
+        pix = page.get_pixmap(dpi=300, colorspace=fitz.csRGB, alpha=False)
         img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
         return (pytesseract.image_to_string(img) or "").strip()
-    except Exception:
-        return ""
+    except Exception as exc:
+        raise RuntimeError(f"Scanned PDF OCR failed: {exc}") from exc
 
 
 def _extract_docx(path: Path) -> list[PageText]:
     from docx import Document as DocxDocument
 
     document = DocxDocument(str(path))
-    paragraphs = [p.text.strip() for p in document.paragraphs if p.text and p.text.strip()]
-    text = "\n".join(paragraphs)
+    from docx.table import Table
+    from docx.text.paragraph import Paragraph
+
+    # Include tables in reading order; case chronologies often live in table cells.
+    blocks: list[str] = []
+    for child in document.element.body.iterchildren():
+        if child.tag.endswith("}p"):
+            value = Paragraph(child, document).text.strip()
+        elif child.tag.endswith("}tbl"):
+            value = "\n".join(" | ".join(cell.text.strip() for cell in row.cells)
+                              for row in Table(child, document).rows)
+        else:
+            continue
+        if value:
+            blocks.append(value)
+    text = "\n\n".join(blocks)
     return [PageText(page_number=1, text=text, is_ocr=False)]
 
 

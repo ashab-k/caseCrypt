@@ -23,7 +23,7 @@ export function KnowledgeGraph({ graph }: { graph: KnowledgeGraphData | null }) 
     if (!graph || !svgRef.current || !wrapRef.current) return;
     if (graph.nodes.length === 0) return;
 
-    const width = wrapRef.current.clientWidth || 640;
+    let width = wrapRef.current.clientWidth || 640;
     const height = 360;
 
     const nodes: SimNode[] = graph.nodes.map((n) => ({ ...n }));
@@ -83,6 +83,8 @@ export function KnowledgeGraph({ graph }: { graph: KnowledgeGraphData | null }) 
       .join("g")
       .call(drag);
 
+    node.append("title").text((d) => d.label);
+
     node
       .append("circle")
       .attr("r", (d) => (d.group === "case" ? 14 : 9))
@@ -90,7 +92,7 @@ export function KnowledgeGraph({ graph }: { graph: KnowledgeGraphData | null }) 
       .attr("stroke", "#fff")
       .attr("stroke-width", 1.5);
 
-    node
+    const labels = node
       .append("text")
       .text((d) => d.label)
       .attr("x", 12)
@@ -98,7 +100,27 @@ export function KnowledgeGraph({ graph }: { graph: KnowledgeGraphData | null }) 
       .attr("font-size", 11)
       .attr("fill", "#1e2a38");
 
+    function updateLabels() {
+      const limit = Math.max(12, Math.floor((width / 2 - 35) / 6));
+      labels.text((d) => d.label.length > limit ? `${d.label.slice(0, limit - 1)}…` : d.label);
+    }
+    updateLabels();
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry.contentRect.width) return;
+      width = entry.contentRect.width;
+      svg.attr("viewBox", `0 0 ${width} ${height}`);
+      simulation.force("center", d3.forceCenter(width / 2, height / 2)).alpha(0.3).restart();
+      updateLabels();
+    });
+    observer.observe(wrapRef.current);
+
     simulation.on("tick", () => {
+      for (const d of nodes) {
+        d.x = Math.max(20, Math.min(width - 20, d.x ?? width / 2));
+        d.y = Math.max(20, Math.min(height - 20, d.y ?? height / 2));
+      }
+      labels.attr("x", (d) => (d.x ?? 0) > width / 2 ? -16 : 16)
+        .attr("text-anchor", (d) => (d.x ?? 0) > width / 2 ? "end" : "start");
       link
         .attr("x1", (d) => (d.source as SimNode).x ?? 0)
         .attr("y1", (d) => (d.source as SimNode).y ?? 0)
@@ -108,6 +130,7 @@ export function KnowledgeGraph({ graph }: { graph: KnowledgeGraphData | null }) 
     });
 
     return () => {
+      observer.disconnect();
       simulation.stop();
     };
   }, [graph]);

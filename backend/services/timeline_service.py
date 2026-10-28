@@ -50,7 +50,8 @@ def build_timeline(
     for extraction, document in pairs:
         if last_updated is None or extraction.extracted_at > last_updated:
             last_updated = extraction.extracted_at
-        for ev in _loads(extraction.events_json, []):
+        document_events = _loads(extraction.events_json, [])
+        for ev in document_events:
             events.append(
                 {
                     "date": ev.get("date"),
@@ -62,21 +63,8 @@ def build_timeline(
                     "page_number": ev.get("page_number"),
                 }
             )
-        # Promote dated mentions into timeline when events are sparse
-        for d in _loads(extraction.dates_json, []):
-            if not d.get("date"):
-                continue
-            events.append(
-                {
-                    "date": d.get("date"),
-                    "description": d.get("event") or f"Date mentioned: {d.get('date')}",
-                    "type": "other",
-                    "source_document": document.original_name,
-                    "document_id": document.id,
-                    "document_type": document.file_type,
-                    "page_number": None,
-                }
-            )
+        # Date mentions stay in Entities. A date reference alone is not a case event;
+        # promoting it here duplicates events and misdates sentences with several dates.
 
     def sort_key(item: dict[str, Any]):
         date = item.get("date") or ""
@@ -120,7 +108,9 @@ def aggregate_entities(pairs: list[tuple[Extraction, Document]]) -> dict[str, An
                 dates.append(d)
         extend_unique(claims, _loads(extraction.claims_json, []))
         for c in _loads(extraction.cited_provisions_json, []):
-            if c not in cited:
+            if not any((item.get("act", "").casefold(), item.get("section", "").casefold())
+                       == (c.get("act", "").casefold(), c.get("section", "").casefold())
+                       for item in cited):
                 cited.append(c)
         for e in _loads(extraction.spacy_entities_json, []):
             if e not in spacy_entities:
@@ -133,6 +123,7 @@ def aggregate_entities(pairs: list[tuple[Extraction, Document]]) -> dict[str, An
         "cited_provisions": cited,
         "spacy_entities": spacy_entities,
         "document_count_extracted": len(pairs),
+        "extraction_methods": sorted({e.extraction_method for e, _ in pairs}),
     }
 
 

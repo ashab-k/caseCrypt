@@ -181,10 +181,10 @@ function DashboardInner() {
                   <p className="text-xs font-medium uppercase tracking-wide text-accent">
                     {c.case_type}
                   </p>
-                  <h2 className="mt-1 font-[family-name:var(--font-display)] text-xl text-ink group-hover:text-accent">
+                  <h2 className="mt-1 font-[family-name:var(--font-display)] text-xl text-ink [overflow-wrap:anywhere] group-hover:text-accent">
                     {c.title}
                   </h2>
-                  <p className="mt-2 line-clamp-2 text-sm text-slate">
+                  <p className="mt-2 line-clamp-2 text-sm text-slate [overflow-wrap:anywhere]">
                     {c.description || "No description"}
                   </p>
                   <p className="mt-4 text-xs text-muted">

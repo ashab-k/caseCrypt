@@ -125,7 +125,7 @@ function CaseDetailInner() {
                 <p className="text-xs font-medium uppercase tracking-wide text-accent">
                   {caseData.case_type}
                 </p>
-                <h1 className="font-[family-name:var(--font-display)] text-4xl text-ink">
+                <h1 className="font-[family-name:var(--font-display)] text-4xl text-ink [overflow-wrap:anywhere]">
                   {caseData.title}
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-slate">
@@ -186,7 +186,7 @@ function CaseDetailInner() {
                       key={doc.id}
                       className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
                     >
-                      <span className="text-ink">{doc.original_name}</span>
+                      <span className="min-w-0 [overflow-wrap:anywhere] text-ink">{doc.original_name}</span>
                       <span
                         className={
                           doc.extracted
@@ -209,11 +209,13 @@ function CaseDetailInner() {
                   OCR, parties, timeline, and entity graph for this case.
                 </p>
               </div>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <EntitiesPanel entities={entities} />
+              <div className="grid items-start gap-6 lg:grid-cols-2">
+                <div className="min-w-0 space-y-6">
+                  <EntitiesPanel entities={entities} />
+                  <KnowledgeGraph graph={graph} />
+                </div>
                 <TimelineView timeline={timeline} />
               </div>
-              <KnowledgeGraph graph={graph} />
             </section>
 
             <section className="mt-10">
