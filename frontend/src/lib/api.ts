@@ -2,7 +2,11 @@ import type {
   Case,
   CaseCreatePayload,
   CaseDocument,
+  CaseEntities,
   CaseUpdatePayload,
+  ExtractResponse,
+  KnowledgeGraph,
+  Timeline,
   TokenResponse,
   User,
 } from "@/types";
@@ -132,4 +136,19 @@ export const api = {
     request<{ status: string }>(`/api/cases/${caseId}/documents/${docId}`, {
       method: "DELETE",
     }),
+
+  extractCase: (caseId: string, force = false) =>
+    request<ExtractResponse>(
+      `/api/cases/${caseId}/extract${force ? "?force=true" : ""}`,
+      { method: "POST" },
+    ),
+
+  getTimeline: (caseId: string) =>
+    request<Timeline>(`/api/cases/${caseId}/timeline`),
+
+  getEntities: (caseId: string) =>
+    request<CaseEntities>(`/api/cases/${caseId}/entities`),
+
+  getKnowledgeGraph: (caseId: string) =>
+    request<KnowledgeGraph>(`/api/cases/${caseId}/knowledge-graph`),
 };

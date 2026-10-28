@@ -28,6 +28,8 @@ OPENAI_API_KEY=sk-...   # needed from Phase 2+
 cd backend
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+# macOS OCR: brew install tesseract
 cp .env.example .env
 uvicorn main:app --reload --port 8000
 ```

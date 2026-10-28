@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import close_db, connect_db
-from routers import auth, cases, upload
+from routers import auth, cases, extract, upload
 
 
 @asynccontextmanager
@@ -37,6 +37,8 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(cases.router, prefix="/api/cases", tags=["Cases"])
 app.include_router(upload.router, prefix="/api/cases", tags=["Upload"])
+# Phase 2 routers
+app.include_router(extract.router, prefix="/api/cases", tags=["Extract"])
 
 
 @app.get("/api/health", tags=["Health"])

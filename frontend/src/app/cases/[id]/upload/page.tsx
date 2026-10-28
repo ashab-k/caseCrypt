@@ -138,6 +138,16 @@ function UploadInner() {
           </p>
         </div>
 
+        {docs.length > 0 && (
+          <p className="mt-6 text-sm text-slate">
+            Next:{" "}
+            <Link href={`/cases/${caseId}`} className="font-semibold text-accent hover:underline">
+              open the case
+            </Link>{" "}
+            and run extraction to build the timeline and entity graph.
+          </p>
+        )}
+
         <section className="mt-10">
           <h2 className="text-lg font-semibold text-ink">
             Documents ({docs.length})
@@ -156,6 +166,10 @@ function UploadInner() {
                     <p className="text-xs text-muted">
                       {d.file_type.toUpperCase()} · {formatBytes(d.file_size)} ·{" "}
                       {formatDate(d.uploaded_at)}
+                      {" · "}
+                      <span className={d.extracted ? "text-accent" : ""}>
+                        {d.extracted ? "Extracted" : "Pending extraction"}
+                      </span>
                     </p>
                     <p className="mt-0.5 font-mono text-[10px] text-muted break-all">
                       sha256:{d.sha256.slice(0, 16)}…

@@ -2,7 +2,7 @@
 Pydantic schemas — Phase 2 extraction, timeline, entities
 """
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -21,7 +21,7 @@ class DateMention(BaseModel):
 class ExtractedEvent(BaseModel):
     date: Optional[str] = None
     description: str
-    type: Literal["filing", "hearing", "judgment", "incident", "other"] = "other"
+    type: str = "other"
     page_number: Optional[int] = None
 
 

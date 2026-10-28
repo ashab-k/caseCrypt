@@ -1,8 +1,8 @@
 # Phase 2 — Document Intelligence (OCR + NLP + Timeline)
 
-> **Status**: ⏳ Pending
+> **Status**: ✅ Complete
 > **Goal**: Upload a case PDF → auto-extract parties, dates, events, cited sections → view interactive timeline.
-> **Depends on**: Phase 1 (cases + documents must exist in MongoDB)
+> **Depends on**: Phase 1 (cases + documents must exist in SQLite)
 > **Unlocks**: Phase 4 (contradiction detection needs extracted sentences)
 
 ---
@@ -11,8 +11,8 @@
 
 | Area | What |
 |---|---|
-| **Backend** | OCR service (PyMuPDF + Tesseract + python-docx), NLP service (spaCy + GPT-4o structured extraction), extraction router, timeline router |
-| **Frontend** | Case detail page with entities panel, interactive vertical timeline, D3.js knowledge graph |
+| **Backend** | OCR service (PyMuPDF + Tesseract + python-docx), NLP service (spaCy + GPT-4o structured extraction), extraction router, timeline / entities / knowledge-graph endpoints |
+| **Frontend** | Case detail page with entities panel, interactive vertical timeline, D3.js knowledge graph, Run extraction CTA |
 
 ---
 
@@ -21,9 +21,10 @@
 | File | Purpose |
 |---|---|
 | `services/ocr_service.py` | Extracts text from PDF/DOCX/JPG/PNG |
-| `services/nlp_service.py` | Named entity recognition + structured extraction via GPT-4o |
-| `routers/extract.py` | POST /cases/{id}/extract — triggers OCR + NLP pipeline |
-| `routers/timeline.py` | GET /cases/{id}/timeline — returns sorted events |
+| `services/nlp_service.py` | Named entity recognition + structured extraction via GPT-4o (heuristic fallback) |
+| `services/timeline_service.py` | Timeline build, entity aggregate, knowledge graph |
+| `routers/extract.py` | Extract / timeline / entities / knowledge-graph endpoints |
+| `models/extraction.py` | Pydantic schemas for Phase 2 responses |
 
 ---
 
@@ -75,6 +76,8 @@ Prompt asks for JSON output:
 }
 ```
 
+When `OPENAI_API_KEY` is unset, heuristic extraction still populates parties / dates / events / provisions.
+
 ---
 
 ## Timeline Builder Logic
@@ -83,7 +86,7 @@ Prompt asks for JSON output:
 2. Normalise dates to ISO 8601 (`YYYY-MM-DD`)
 3. Sort chronologically
 4. Annotate each event with `source_document`, `document_type`, `page_number`
-5. Store in MongoDB collection `timelines`
+5. Serve via `GET /api/cases/{id}/timeline` (built from `extractions` table)
 
 ---
 
@@ -91,49 +94,19 @@ Prompt asks for JSON output:
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | `/api/cases/{id}/extract` | JWT | Run OCR + NLP on all unextracted documents |
+| POST | `/api/cases/{id}/extract` | JWT | Run OCR + NLP on unextracted documents (`?force=true` to re-run) |
 | GET | `/api/cases/{id}/timeline` | JWT | Return sorted timeline events |
 | GET | `/api/cases/{id}/entities` | JWT | Return all extracted entities |
+| GET | `/api/cases/{id}/knowledge-graph` | JWT | Return nodes/links for D3 graph |
 
 ---
 
-## MongoDB Collections (New in Phase 2)
+## SQLite Tables (Phase 2)
 
 ### `extractions`
-```json
-{
-  "_id": ObjectId,
-  "document_id": "string",
-  "case_id": "string",
-  "raw_text": "string (full extracted text)",
-  "parties": {},
-  "dates": [],
-  "events": [],
-  "claims": [],
-  "cited_provisions": [],
-  "extracted_at": "datetime",
-  "ocr_used": false
-}
-```
+Stores per-document OCR text + structured NLP JSON fields (`parties_json`, `dates_json`, `events_json`, `claims_json`, `cited_provisions_json`, `spacy_entities_json`).
 
-### `timelines`
-```json
-{
-  "_id": ObjectId,
-  "case_id": "string",
-  "events": [
-    {
-      "date": "2024-01-15",
-      "description": "FIR filed at Bangalore North Police Station",
-      "type": "filing",
-      "source_document": "FIR_001.pdf",
-      "document_type": "fir",
-      "page_number": 1
-    }
-  ],
-  "last_updated": "datetime"
-}
-```
+`documents.extracted` flags whether a file has been processed.
 
 ---
 
@@ -149,13 +122,13 @@ Prompt asks for JSON output:
 
 ## Deliverable / Definition of Done
 
-- [ ] Upload a native PDF → extract text → entities stored in MongoDB
-- [ ] Upload a scanned PDF image → Tesseract OCR runs → entities extracted
-- [ ] Upload a DOCX → python-docx extracts text → entities extracted
-- [ ] Timeline shows chronologically sorted events from multiple documents
-- [ ] Each timeline event shows source document name and type
-- [ ] Entities panel shows parties, cited provisions, key dates
-- [ ] Knowledge graph renders in the browser
+- [x] Upload a native PDF → extract text → entities stored in SQLite
+- [x] Upload a scanned PDF image → Tesseract OCR runs → entities extracted
+- [x] Upload a DOCX → python-docx extracts text → entities extracted
+- [x] Timeline shows chronologically sorted events from multiple documents
+- [x] Each timeline event shows source document name and type
+- [x] Entities panel shows parties, cited provisions, key dates
+- [x] Knowledge graph renders in the browser
 
 ---
 
@@ -164,3 +137,4 @@ Prompt asks for JSON output:
 - GPT-4o extraction costs API tokens per document (no batching in Phase 2)
 - Very poor scan quality (< 150 DPI) may yield unreliable OCR — requires human review
 - Knowledge graph is static JSON, not a live graph DB (Neo4j is a future upgrade)
+- Without `OPENAI_API_KEY`, extraction uses heuristics (still useful for demos)

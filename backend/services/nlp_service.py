@@ -286,18 +286,60 @@ def _extract_heuristic(text: str, spacy_entities: list[dict[str, str]]) -> dict[
     }
 
 
+_ALLOWED_EVENT_TYPES = {"filing", "hearing", "judgment", "incident", "other"}
+
+
 def _normalize_payload(data: dict[str, Any]) -> dict[str, Any]:
     parties = data.get("parties") or {}
+    events: list[dict[str, Any]] = []
+    for ev in data.get("events") or []:
+        if not isinstance(ev, dict):
+            continue
+        etype = str(ev.get("type") or "other").lower().strip()
+        if etype not in _ALLOWED_EVENT_TYPES:
+            etype = "other"
+        events.append(
+            {
+                "date": ev.get("date"),
+                "description": str(ev.get("description") or "").strip(),
+                "type": etype,
+                "page_number": ev.get("page_number"),
+            }
+        )
+    dates: list[dict[str, str]] = []
+    for d in data.get("dates") or []:
+        if not isinstance(d, dict) or not d.get("date"):
+            continue
+        dates.append(
+            {
+                "date": str(d["date"]),
+                "event": str(d.get("event") or ""),
+            }
+        )
+
+    claims = [str(c) for c in (data.get("claims") or []) if c]
+    cited: list[dict[str, str]] = []
+    for c in data.get("cited_provisions") or []:
+        if not isinstance(c, dict):
+            continue
+        cited.append(
+            {
+                "act": str(c.get("act") or "Unknown"),
+                "section": str(c.get("section") or ""),
+                "description": str(c.get("description") or ""),
+            }
+        )
+
     return {
         "parties": {
             "petitioner": list(parties.get("petitioner") or []),
             "respondent": list(parties.get("respondent") or []),
             "counsel": list(parties.get("counsel") or []),
         },
-        "dates": data.get("dates") or [],
-        "events": data.get("events") or [],
-        "claims": data.get("claims") or [],
-        "cited_provisions": data.get("cited_provisions") or [],
+        "dates": dates,
+        "events": [e for e in events if e["description"]],
+        "claims": claims,
+        "cited_provisions": [c for c in cited if c["section"]],
     }
 
 
