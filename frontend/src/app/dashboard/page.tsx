@@ -171,34 +171,47 @@ function DashboardInner() {
             {cases.map((c) => (
               <li
                 key={c.id}
-                className="animate-fade-up border border-line bg-white p-5 transition hover:border-accent/40"
+                className="animate-fade-up group relative border border-line bg-white transition hover:border-accent/50 hover:bg-accent-soft/20"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-accent">
-                      {c.case_type}
-                    </p>
-                    <Link
-                      href={`/cases/${c.id}`}
-                      className="mt-1 block font-[family-name:var(--font-display)] text-xl text-ink hover:text-accent"
-                    >
-                      {c.title}
-                    </Link>
-                    <p className="mt-2 line-clamp-2 text-sm text-slate">
-                      {c.description || "No description"}
-                    </p>
-                  </div>
+                <Link
+                  href={`/cases/${c.id}`}
+                  className="block p-5 outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset sm:pr-28"
+                  aria-label={`Open case ${c.title}`}
+                >
+                  <p className="text-xs font-medium uppercase tracking-wide text-accent">
+                    {c.case_type}
+                  </p>
+                  <h2 className="mt-1 font-[family-name:var(--font-display)] text-xl text-ink group-hover:text-accent">
+                    {c.title}
+                  </h2>
+                  <p className="mt-2 line-clamp-2 text-sm text-slate">
+                    {c.description || "No description"}
+                  </p>
+                  <p className="mt-4 text-xs text-muted">
+                    {c.document_count} document{c.document_count === 1 ? "" : "s"} ·{" "}
+                    {formatDate(c.created_at)}
+                  </p>
+                </Link>
+
+                <div className="flex gap-2 border-t border-line px-5 py-3 sm:absolute sm:right-3 sm:top-3 sm:z-10 sm:flex-col sm:items-stretch sm:border-0 sm:p-0">
+                  <Link
+                    href={`/cases/${c.id}/upload`}
+                    className="flex-1 rounded-md bg-accent px-3 py-2 text-center text-xs font-semibold text-white hover:bg-accent-hover sm:flex-none sm:py-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Upload
+                  </Link>
                   <button
                     type="button"
-                    onClick={() => onDelete(c.id)}
-                    className="text-xs text-muted hover:text-danger"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDelete(c.id);
+                    }}
+                    className="flex-1 rounded-md px-3 py-2 text-xs text-muted hover:bg-red-50 hover:text-danger sm:flex-none sm:py-1.5"
                   >
                     Delete
                   </button>
-                </div>
-                <div className="mt-4 flex items-center justify-between text-xs text-muted">
-                  <span>{c.document_count} document{c.document_count === 1 ? "" : "s"}</span>
-                  <span>{formatDate(c.created_at)}</span>
                 </div>
               </li>
             ))}

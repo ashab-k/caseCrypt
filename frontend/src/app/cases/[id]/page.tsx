@@ -98,6 +98,23 @@ function CaseDetailInner() {
               </Link>
             </div>
 
+            <section className="mt-8 border border-line bg-white p-6">
+              <h2 className="text-lg font-semibold text-ink">Documents</h2>
+              <p className="mt-1 text-sm text-muted">
+                {caseData.document_count === 0
+                  ? "No files yet. Upload PDFs, DOCX, or images to start building this case."
+                  : `${caseData.document_count} file${caseData.document_count === 1 ? "" : "s"} attached to this case.`}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  href={`/cases/${caseId}/upload`}
+                  className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
+                >
+                  {caseData.document_count === 0 ? "Upload files" : "Manage uploads"}
+                </Link>
+              </div>
+            </section>
+
             <section className="mt-10">
               <h2 className="text-lg font-semibold text-ink">Intelligence modules</h2>
               <p className="mt-1 text-sm text-muted">

@@ -62,3 +62,30 @@ class Document(Base):
     extracted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     case: Mapped["Case"] = relationship(back_populates="documents")
+    extraction: Mapped["Extraction | None"] = relationship(
+        back_populates="document",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+
+
+class Extraction(Base):
+    __tablename__ = "extractions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    document_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("documents.id"), unique=True, index=True, nullable=False
+    )
+    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("cases.id"), index=True, nullable=False)
+    raw_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    parties_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    dates_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    events_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    claims_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    cited_provisions_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    spacy_entities_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    extracted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    ocr_used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    extraction_method: Mapped[str] = mapped_column(String(32), default="heuristic", nullable=False)
+
+    document: Mapped["Document"] = relationship(back_populates="extraction")
